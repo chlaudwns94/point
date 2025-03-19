@@ -11,57 +11,42 @@ public class PointRepository {
     @Autowired
     private PointMapper pointMapper;
 
-    // 포인트 적립 메서드
-    public void save(String phoneNumber, int point) {
-        try {
-            // phoneNumber를 int로 변환 (phoneNumber가 숫자만 포함된 문자열이라고 가정)
-            String cleanedPhoneNumber = phoneNumber.replace("-", "");
-            int userId = Integer.parseInt(cleanedPhoneNumber);
-
-            Point newPoint = new Point();
-            newPoint.setUserId(userId);  // userId를 int로 설정
-            newPoint.setPoint(point);
-            pointMapper.insertPoint(newPoint);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid phone number format: must be numeric.");
-        }
-    }
-
     // 포인트 차감 메서드
     public void update(String phoneNumber, int point) {
-        try {
-            String cleanedPhoneNumber = phoneNumber.replace("-", "");
-            int userId = Integer.parseInt(cleanedPhoneNumber);
-
-            Point updatePoint = new Point();
-            updatePoint.setUserId(userId);  // userId를 int로 설정
-            updatePoint.setPoint(point);
-            pointMapper.updatePoint(updatePoint);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid phone number format: must be numeric.");
+        int userId = findUserIdByPhoneNumber(phoneNumber);
+        if (userId == 0) {
+            throw new IllegalArgumentException("User not found for phone number: " + phoneNumber);
         }
+
+        System.out.println("Updating points for userId: " + userId);
+
+        Point updatePoint = new Point();
+        updatePoint.setUserId(userId);
+        updatePoint.setPoint(point);
+        pointMapper.updatePoint(updatePoint);
+    }
+    // 핸드폰 번호로 유저 ID 조회
+    public Integer findUserIdByPhoneNumber(String phoneNumber) {
+        Integer userId = pointMapper.findUserIdByPhoneNumber(phoneNumber);
+        return userId != null ? userId : 0; // null이면 0 반환
     }
 
-    // 핸드폰 번호로 유저 조회
-    public Point findByPhoneNumber(String phoneNumber) {
-        try {
-            // phoneNumber를 int로 변환하여 조회
-            String cleanedPhoneNumber = phoneNumber.replace("-", "");
-            int userId = Integer.parseInt(cleanedPhoneNumber);
-            return pointMapper.findPointByPhoneNumber(userId);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid phone number format: must be numeric.");
+    // 포인트 적립 메서드 수정
+    public void save(String phoneNumber, int point, int calcul) {
+        int userId = findUserIdByPhoneNumber(phoneNumber);
+        if (userId == 0) {
+            throw new IllegalArgumentException("User not found for phone number: " + phoneNumber);
         }
+
+        Point newPoint = new Point();
+        newPoint.setUserId(userId);
+        newPoint.setCalcul(calcul);
+        newPoint.setPoint(point);
+        pointMapper.insertPoint(newPoint);
     }
 
     // 새로운 유저 생성 (user_tb에 저장)
     public void createNewUser(String phoneNumber) {
-        try {
-            // phoneNumber에서 하이픈을 제거한 후 저장
-            String cleanedPhoneNumber = phoneNumber.replace("-", "");
-            pointMapper.createNewUser(cleanedPhoneNumber); // phoneNumber를 그대로 사용하여 유저 생성
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid phone number format: must be numeric.");
-        }
+        pointMapper.createNewUser(phoneNumber);
     }
 }
